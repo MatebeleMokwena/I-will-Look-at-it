@@ -1,4 +1,3 @@
-using System;
 using System.Data.SQLite;
 
 namespace GotYouDataBase
@@ -231,8 +230,59 @@ namespace GotYouDataBase
                 );
             }
         }
-
-        private void btnClr_Click(object sender, EventArgs e)
+        private void btnSrch_Click(object sender, EventArgs e)/////////////////////////
+        {
+            dataGridView1.Rows.Clear();
+        
+            string search = txtSearch.Text.Trim().ToLower();
+        
+            if (string.IsNullOrEmpty(search))
+            {
+                MessageBox.Show("Please enter a file name.");
+                return;
+            }
+        
+            var conditions = new List<string>();
+        
+            if (chkCh.Checked)
+                conditions.Add("ChangeType LIKE '%Changed%'");
+            if (chkCre.Checked)
+                conditions.Add("ChangeType LIKE '%Created%'");
+            if (chkRe.Checked)
+                conditions.Add("ChangeType LIKE '%Renamed%'");
+            if (chkDel.Checked)
+                conditions.Add("ChangeType LIKE '%Deleted%'");
+        
+            string filterClause = conditions.Count > 0 ? $"AND ({string.Join(" OR ", conditions)})" : "";
+        
+            string dbPath = Path.Combine(Application.StartupPath, "Monitored_Changes.db");
+        
+            using var connection = new SQLiteConnection($"Data Source={dbPath}");
+            connection.Open();
+        
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+        SELECT Path, ChangeType, Time, FileSize 
+        FROM Changes 
+        WHERE (Path LIKE @search OR ChangeType LIKE @search)
+        {filterClause};";
+        
+            command.Parameters.AddWithValue("@search", $"%{search}%");
+        
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                dataGridView1.Rows.Add(
+                    reader["Path"].ToString(),
+                    reader["ChangeType"].ToString(),
+                    reader["Time"].ToString(),
+                    reader["FileSize"].ToString()
+                );
+            }
+                 
+               
+        }
+        private void btnClr_Click(object sender, EventArgs e)////////////////////////
         {
             dataGridView1.Rows.Clear();
         }
